@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro do Giroscópio</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background: #ffffff;
+        }
+        h1 {
+            color: #000000;
+        }
+        .control-panel {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            width: 200px;
+            text-align: center;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+            color: #000000;
+        }
+
+        #gyro-data {
+            font-size: 1.5em;
+            color: #000000;
+            background: #fff;
+            padding: 50px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        #gyro-data p {
+            margin: 10px 0;
+        }
+        button {
+            background: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 15px;
+            margin: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        button:disabled {
+            background: #ffffff;
+            cursor: not-allowed;
+        }
+
+        .button-icon {
+            margin-right: 5px;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        #connectionStatus {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Registro do Giroscópio(BETA)</h1>
+    <div id="gyro-data">
+        <p>Alpha: <span id="alpha">0.00</span></p>
+        <p>Beta: <span id="beta">0.00</span></p>
+        <p>Gamma: <span id="gamma">0.00</span></p>
+
+        <button id="openClaw"><i class="fas fa-hand-rock button-icon"></i>Fechar Garra</button>
+        <button id="closeClaw"><i class="fas fa-hand-paper button-icon"></i>Abrir Garra</button>
+
+        <div class="button-container">
+            <button id="connect">Conectar</button>
+        </div>
+        <div id="connectionStatus"></div>
+    </div>
+    
+    <script>
+        let socket;
+
+        document.getElementById('connect').addEventListener('click', () => {
+            socket = new WebSocket('ws://192.168.0.32:8765'); // Substitua pelo endereço IP do seu servidor WebSocket
+
+            socket.onopen = () => {
+                console.log('Conectado ao servidor WebSocket');
+                document.getElementById('connectionStatus').innerText = 'Conectado ao servidor WebSocket';
+                document.getElementById('connectionStatus').style.color = 'green';
+                document.getElementById('connect').disabled = true;
+            };
+
+            socket.onerror = (error) => {
+                console.error('Erro no WebSocket:', error);
+            };
+
+            socket.onclose = () => {
+                console.log('Desconectado do servidor WebSocket');
+                document.getElementById('connectionStatus').innerText = 'Desconectado do servidor WebSocket';
+                document.getElementById('connectionStatus').style.color = 'red';
+                document.getElementById('connect').disabled = false;
+            };
+        });
+
+        // Função para enviar dados do giroscópio para o servidor WebSocket
+        function enviarDadosGiroscopio(alpha, beta, gamma) {
+            const dados = `${alpha},${beta},${gamma}`;
+            socket.send(dados);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if ('DeviceOrientationEvent' in window) {
+                window.addEventListener('deviceorientation', (event) => {
+                    const alpha = event.alpha ? event.alpha.toFixed(2) : 0.00;
+                    const beta = event.beta ? event.beta.toFixed(2) : 0.00;
+                    const gamma = event.gamma ? event.gamma.toFixed(2) : 0.00;
+
+                    document.getElementById('alpha').textContent = alpha;
+                    document.getElementById('beta').textContent = beta;
+                    document.getElementById('gamma').textContent = gamma;
+
+                    enviarDadosGiroscopio(alpha, beta, gamma);
+                }, true);
+            } else {
+                alert("Seu dispositivo não suporta DeviceOrientation.");
+            }
+        });
+    </script>
+</body>
+</html>
